@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
 # BabyNames python coding exercise.
@@ -40,6 +40,7 @@ Suggested milestones for incremental development:
  -Fix main() to use the extract_names list
 """
 
+
 def extract_names(filename):
     """Given a file name for baby.html, returns a list starting with the year string
   followed by the name-rank strings in alphabetical order.
@@ -50,33 +51,32 @@ def extract_names(filename):
   # The list [year, name_and_rank, name_and_rank, ...] we'll eventually return.
     names = []
 
-  # Open and read the file.
-    f = open(filename, 'rU')
-    text = f.read()
+    # Open and read the file.
+    with open(filename) as f:
+        text = f.read()
     # Could process the file line-by-line, but regex on the whole text
     # at once is even easier.
 
     # Get the year.
     year_match = re.search(r'Popularity\sin\s(\d\d\d\d)', text)
     if not year_match:
-    # We didn't find a year, so we'll exit with an error message.
-        sys.stderr.write('Couldn\'t find the year!\n')
-        sys.exit(1)
+        # We didn't find a year, so we'll exit with an error message.
+        raise ValueError("Couldn't find year")
+        
     year = year_match.group(1)
     names.append(year)
 
     # Extract all the data tuples with a findall()
     # each tuple is: (rank, boy-name, girl-name)
     tuples = re.findall(r'<td>(\d+)</td><td>(\w+)</td>\<td>(\w+)</td>', text)
-    #print tuples
+    # print tuples
 
     # Store data into a dict using each name as a key and that
     # name's rank number as the value.
     # (if the name is already in there, don't add it, since
     # this new rank will be bigger than the previous rank).
-    names_to_rank =  {}
-    for rank_tuple in tuples:
-        (rank, boyname, girlname) = rank_tuple  # unpack the tuple into 3 vars
+    names_to_rank = {}
+    for rank, boyname, girlname in tuples:
         if boyname not in names_to_rank:
             names_to_rank[boyname] = rank
         if girlname not in names_to_rank:
@@ -99,39 +99,49 @@ def extract_names(filename):
   # LAB(end solution)
 
 
+def create_parser():
+    parser = argparse.ArgumentParser(description='Processes baby names files')
+    parser.add_argument('--summaryfile', action='store_true',
+                        help="help create summary file")
+    parser.add_argument('files', nargs='+', help="filename(s) to parse")
+    return parser
+
+
 def main():
-  # This command-line parsing code is provided.
-  # Make a list of command line arguments, omitting the [0] element
-  # which is the script itself.
-    args = sys.argv[1:]
+    # This command-line parsing code is provided.
+    # Make a list of command line arguments, omitting the [0] element
+    # which is the script itself.
+    parser = create_parser()
+    args = parser.parse_args()
+    print(args)
 
     if not args:
-        print('usage: [--summaryfile] file [file ...]')
+        parser.print_usage()
         sys.exit(1)
 
-  # Notice the summary flag and remove it from args if it is present.
-    summary = False
-    if args[0] == '--summaryfile':
-        summary = True
-        del args[0]
+    # Notice the summary flag and remove it from args if it is present.
+    summary = args.summaryfile
+    file_list = args.files
 
-  # +++your code here+++
-  # For each filename, get the names, then either print the text output
-  # or write it to a summary file
-  # LAB(begin solution)
-    for filename in args:
+    # +++your code here+++
+    # For each filename, get the names, then either print the text output
+    # or write it to a summary file
+    # LAB(begin solution)
+    for filename in file_list:
+        print("working on file: {}".format(filename))
         names = extract_names(filename)
 
-    # Make text out of the whole list
+        # Make text out of the whole list
         text = '\n'.join(names)
 
         if summary:
-            outf = open(filename + '.summary', 'w')
-            outf.write(text + '\n')
-            outf.close()
+            with open(filename + '.summary', 'w') as outf:
+                outf.write(text + '\n')
+            
         else:
             print(text)
-  # LAB(end solution)
+        # LAB(end solution)
+
 
 if __name__ == '__main__':
-  main()
+    main()
